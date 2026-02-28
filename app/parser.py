@@ -136,22 +136,28 @@ def parser(grouped_tokens, l, r):
         if not isinstance(token, Operator):
             continue
 
-        if not precedence or precedence > operator_precedence[token.op]:
+        if precedence is None or precedence >= operator_precedence[token.op]:
             precedence = operator_precedence[token.op]
             index = i
             op = token.op
 
-    if not precedence:
+    if index is None:
         return grouped_tokens[l]
     
     if op == "|":
         pipe = Pipe()
 
-        pipe.add_cmd(grouped_tokens[index-1])
+        cmds = []
 
-        while index < r and isinstance(grouped_tokens[index], Operator) and grouped_tokens[index].op == "|":
-            pipe.add_cmd(grouped_tokens[index+1])
-            index+=2
+        cmds.append(grouped_tokens[index+1])
+
+        while l < index and isinstance(grouped_tokens[index], Operator) and grouped_tokens[index].op == "|":
+            cmds.append(grouped_tokens[index-1])
+            index-=2
+        
+        cmds.reverse()
+
+        pipe.cmds = cmds
         
         return pipe
     
