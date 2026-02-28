@@ -52,7 +52,7 @@ class ErrorRedirect(Redirect):
 
 class LogicalAND:
 
-    def __init__(self, left, right):
+    def __init__(self, left=None, right=None):
         self.left = left
         self.right = right
 
@@ -110,4 +110,57 @@ def token_grouper(tokens, l=0, r:int|None = None):
     
     return grouped_tokens
             
-print(token_grouper(tokenize("cat file.txt | (wc > out.txt)")))
+print(token_grouper(tokenize("(cat file.txt | grep err) | wc > out.txt && echo done")))
+
+op_mapping = {
+    "||": LogicalOR,
+    "&&": LogicalAND,
+    "|": Pipe
+}
+
+operator_precedence = {
+    LogicalOR: 10,
+    LogicalAND: 20,
+    Pipe: 30
+}
+
+
+def parser(grouped_tokens, l, r):
+
+    precedence = None
+    index = None
+    op = None
+
+    for i in range(l, r):
+        token = grouped_tokens[i]
+        if not isinstance(token, Operator):
+            continue
+
+        if not precedence or precedence > operator_precedence[token.op]:
+            precedence = operator_precedence[token.op]
+            index = i
+            op = token.op
+
+    if not precedence:
+        return grouped_tokens[l]
+    
+    if op == "|":
+        pipe = Pipe()
+
+        pipe.add_cmd(grouped_tokens[index-1])
+
+        while index < r and isinstance(grouped_tokens[index], Operator) and grouped_tokens[index].op == "|":
+            pipe.add_cmd(grouped_tokens[index+1])
+            index+=2
+        
+        return pipe
+    
+    node = op_mapping[op]()
+
+    node.left = parser(grouped_tokens, l, index)
+    node.right = parser(grouped_tokens, index+1, r)
+
+    return node
+
+    
+    
