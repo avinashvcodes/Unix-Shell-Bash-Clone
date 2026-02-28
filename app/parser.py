@@ -1,6 +1,8 @@
 operators = {"|", "&&", "||", ">", ">>", "1>", "1>>"}
 redirects = {">", ">>", "1>", "1>>"}
 
+from tokenizer import tokenize
+
 class Operator:
 
     def __init__(self, op):
@@ -8,6 +10,14 @@ class Operator:
     
     def __repr__(self):
         return f"Operator({self.op})"
+
+class SubShell:
+
+    def __init__(self, arguments):
+        self.arguments = arguments
+    
+    def __repr__(self):
+        return f"SubShell({self.arguments})"
 
 class Command:
 
@@ -73,13 +83,20 @@ def get_token_sequence(tokens, l, r):
     cmd_end = cmd_cur
     return tokens[cmd_start:cmd_end], cmd_cur
 
-def token_grouper(tokens):
-    l, r = 0, len(tokens)
+def token_grouper(tokens, l=0, r:int|None = None):
+    if r is None:
+        r = len(tokens)
 
     grouped_tokens = []
 
     while l < r:
-        if tokens[l] in redirects:
+        if tokens[l] == "(":
+            cur = l
+            while cur < r and tokens[cur] != ")":
+                cur+=1
+            grouped_tokens.append(SubShell(token_grouper(tokens, l+1, cur)))
+            l = cur+1
+        elif tokens[l] in redirects:
             cmd = grouped_tokens.pop()
             l+=1
             token_sequence, l = get_token_sequence(tokens, l, r)
@@ -93,4 +110,4 @@ def token_grouper(tokens):
     
     return grouped_tokens
             
-print(token_grouper(["ls", ">", "out.txt"]))
+print(token_grouper(tokenize("cat file.txt | (wc > out.txt)")))

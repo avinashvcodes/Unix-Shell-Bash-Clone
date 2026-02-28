@@ -19,12 +19,34 @@ def tokenize(s: str):
                 if s[l].isspace():
                     l+=1
                     break
+                if s[l] == "(" or s[l] == ")":
+                    if word:
+                        tokens.append(word)
+                        word = ""
+                    tokens.append(s[l])
+                    l+=1
+                    break
+                if s[l] == "&":
+                    if word:
+                        tokens.append(word)
+                        word = ""
+                    if l+1 < r and s[l+1] == "&":
+                        word+="&&"
+                        l+=2
+                    else:
+                        word+="&"
+                        l+=1
+                    break
                 if s[l] == "|":
                     if word:
                         tokens.append(word)
                         word = ""
-                    tokens.append("|")
-                    l+=1
+                    if l+1 < r and s[l+1] == "|":
+                        word+="||"
+                        l+=2
+                    else:
+                        word+="|"
+                        l+=1
                     break
                 if s[l] == ">":
                     if word and word not in ("1", "2"):
