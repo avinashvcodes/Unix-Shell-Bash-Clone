@@ -101,7 +101,16 @@ def token_grouper(tokens, l=0, r:int|None = None):
                 token_sequence, l = get_token_sequence(tokens, l, r)
                 if not token_sequence:
                     raise Exception("Missing file for redirect")
-                cmd.set_redirect(redirect, token_sequence[0])
+
+                target = token_sequence[0]
+                cmd.set_redirect(redirect, target)
+
+                # Remaining tokens belong to command
+                if len(token_sequence) > 1:
+                    if isinstance(cmd, Command):
+                        cmd.cmd.extend(token_sequence[1:])
+                    else:
+                        raise Exception("Extra tokens after redirect in subshell")
             else:
                 raise Exception("Redirect without command")
         elif tokens[l] in operators:
